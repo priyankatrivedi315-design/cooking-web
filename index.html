@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Food World • Menu</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+
+<style>
+:root {
+    --primary: #e67e22;
+    --primary-dark: #d35400;
+    --accent: #f39c12;
+    --bg: #fffaf4;
+    --card-bg: #ffffff;
+    --text: #1a1208;
+    --muted: #8b7355;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+    font-family: DM Sans;
+    background: var(--bg);
+    color: var(--text);
+}
+
+header {
+    position: sticky;
+    top: 0;
+    background: rgba(255,250,244,0.92);
+    padding: 16px 36px;
+    display:flex;
+    justify-content:space-between;
+    border-bottom:1px solid #f0e4cc;
+}
+
+.logo {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.home-btn {
+    padding: 10px 20px;
+    border-radius: 30px;
+    border: none;
+    background: var(--primary);
+    color: white;
+    cursor: pointer;
+}
+
+#app {
+    max-width: 1200px;
+    margin:auto;
+    padding:40px 20px;
+}
+
+.page-title {
+    text-align:center;
+    font-size: 40px;
+    margin-bottom: 20px;
+}
+
+.grid {
+    display:grid;
+    grid-template-columns: repeat(auto-fill,minmax(250px,1fr));
+    gap:20px;
+}
+
+.card {
+    background:white;
+    border-radius:16px;
+    overflow:hidden;
+    cursor:pointer;
+    box-shadow:0 5px 20px rgba(0,0,0,0.08);
+}
+
+.card img {
+    width:100%;
+    height:180px;
+    object-fit:cover;
+}
+
+.card-content {
+    padding:15px;
+}
+
+.back-btn {
+    margin-bottom:20px;
+    padding:10px 20px;
+    border-radius:20px;
+    border:1px solid #ddd;
+    cursor:pointer;
+    background:white;
+}
+
+.item {
+    display:flex;
+    align-items:center;
+    background:white;
+    margin:10px 0;
+    border-radius:12px;
+    overflow:hidden;
+}
+
+.item img {
+    width:80px;
+    height:80px;
+    object-fit:cover;
+}
+
+.item-body {
+    padding:10px;
+    flex:1;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <div class="logo">🍽 Food World</div>
+    <button class="home-btn" onclick="loadMain()">Home</button>
+</header>
+
+<div id="app"></div>
+
+<script>
+
+let data = {{ menu | tojson }};
+let app = document.getElementById("app");
+let currentMain = null;
+
+/* ─── UNIQUE IMAGES ─────────────────────────────────────────────
+   Every key maps to a distinct Unsplash photo. No URL is reused.
+─────────────────────────────────────────────────────────────── */
+
+// Main categories
+const mainImages = {
+    "full-meal":  "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600",
+    "diet-meal":  "https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=600",
+    "snacks":     "https://images.unsplash.com/photo-1553909489-cd47e0907980?w=600"
+};
+
+// Sub-categories (full-meal cuisines + diet subs + snack subs)
+const subImages = {
+    // Full meal cuisines
+    "indian":       "https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=600",
+    "italian":      "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600",
+    "chinese":      "https://images.unsplash.com/photo-1563245372-f21724e3856d?w=600",
+    "mexican":      "https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=600",
+
+    // Indian thalis
+    "gujarati":     "https://images.unsplash.com/photo-1567337710282-00832b415979?w=600",
+    "punjabi":      "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=600",
+    "kathiyawadi":  "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=600",
+
+    // Italian subs
+    "pizza":        "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600",
+    "pasta":        "https://images.unsplash.com/photo-1555949258-eb67b1ef0ceb?w=600",
+    "lasagna":      "https://images.unsplash.com/photo-1574894709920-11b28e7367e3?w=600",
+
+    // Chinese subs
+    "fried-rice":   "https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=600",
+    "manchurian":   "https://images.unsplash.com/photo-1569050467447-ce54b3bbc37d?w=600",
+    "spring-roll":  "https://images.unsplash.com/photo-1544025162-d76694265947?w=600",
+
+    // Mexican subs
+    "tacos":        "https://images.unsplash.com/photo-1551504734-5ee1c4a1479b?w=600",
+    "burritos":     "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?w=600",
+    "quesadilla":   "https://kidsactivityzone.com/wp-content/uploads/2024/09/Cheese-Quesadilla-14-of-26.jpg",
+
+    // Diet meal subs
+    "low-carb":     "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=600",
+    "high-protein": "https://images.unsplash.com/photo-1532550907401-a500c9a57435?w=600",
+    "keto":         "https://images.unsplash.com/photo-1547592180-85f173990554?w=600",
+    "fruit-diet":   "https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=600",
+
+    // Fruit diet subs
+    "fruit-bowl":   "https://tastesbetterfromscratch.com/wp-content/uploads/2017/06/Fresh-Fruit-Bowl-1-500x500.jpg",
+    "smoothies":    "https://images.unsplash.com/photo-1502741224143-90386d7f8c82?w=600",
+    "fruit-salad":  "https://images.unsplash.com/photo-1568158879083-c42860933ed7?w=600",
+
+    // Snack subs
+    "healthy":      "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600",
+    "fried":        "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=600",
+    "fast-food":    "https://images.unsplash.com/photo-1550547660-d9450f859349?w=600"
+};
+
+// Individual items — every item gets its own unique photo
+const itemImages = {
+    // Indian thalis
+    "Complete Gujarati Thali Set":  "https://images.unsplash.com/photo-1567337710282-00832b415979?w=400",
+    "Complete Punjabi Thali Set":   "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=400",
+    "Complete Kathiyawadi Thali Set":"https://images.unsplash.com/photo-1512058564366-18510be2db19?w=400",
+
+    // Pizza
+    "Margherita Pizza":             "https://images.unsplash.com/photo-1598023696416-0193a0bcd302?w=400",
+    "Cheese Burst Pizza":           "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400",
+    "Veg Supreme Pizza":            "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400",
+
+    // Pasta
+    "White Sauce Pasta":            "https://images.unsplash.com/photo-1555949258-eb67b1ef0ceb?w=400",
+    "Red Sauce Pasta":              "https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=400",
+    "Pesto Pasta":                  "https://images.unsplash.com/photo-1473093295043-cdd812d0e601?w=400",
+
+    // Lasagna
+    "Veg Lasagna":                  "https://images.unsplash.com/photo-1574894709920-11b28e7367e3?w=400",
+    "Cheese Lasagna":               "https://images.unsplash.com/photo-1588315029754-2dd089d39a1a?w=400",
+    "Mushroom Lasagna":             "https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=400",
+
+    // Fried Rice
+    "Veg Fried Rice":               "https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=400",
+    "Schezwan Fried Rice":          "https://images.unsplash.com/photo-1562802378-063ec186a863?w=400",
+    "Egg Fried Rice":               "https://images.unsplash.com/photo-1536304993881-ff6e9eefa2a6?w=400",
+
+    // Manchurian
+    "Dry Manchurian":               "https://images.unsplash.com/photo-1569050467447-ce54b3bbc37d?w=400",
+    "Gravy Manchurian":             "https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=400",
+    "Paneer Manchurian":            "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=400",
+
+    // Spring Roll
+    "Veg Spring Roll":              "https://images.unsplash.com/photo-1544025162-d76694265947?w=400",
+    "Cheese Spring Roll":           "https://images.unsplash.com/photo-1559847844-5315695dadae?w=400",
+    "Paneer Spring Roll":           "https://images.unsplash.com/photo-1563245372-f21724e3856d?w=400",
+
+    // Tacos
+    "Veg Tacos":                    "https://images.unsplash.com/photo-1551504734-5ee1c4a1479b?w=400",
+    "Chicken Tacos":                "https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=400",
+    "Cheese Tacos":                 "https://images.unsplash.com/photo-1615870216519-2f9fa575fa5c?w=400",
+
+    // Burritos
+    "Veg Burrito":                  "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?w=400",
+    "Chicken Burrito":              "https://images.unsplash.com/photo-1582234372722-50d7ccc30ebd?w=400",
+    "Bean Burrito":                 "https://i.etsystatic.com/58868072/r/il/fcd098/6812518988/il_1588xN.6812518988_mjhl.jpg",
+
+    // Quesadilla
+    "Cheese Quesadilla":            "https://feastingnotfasting.com/wp-content/uploads/2022/12/Air-Fryer-Quesadilla-Recipe-6.jpg",
+    "Veg Quesadilla":               "https://images.unsplash.com/photo-1600891964092-4316c288032e?w=400",
+    "Chicken Quesadilla":           "https://heatherlea.ca/wp-content/uploads/2022/06/IMG_8962.jpg",
+
+    // Low carb
+    "Salad Bowl":                   "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400",
+    "Grilled Veg":                  "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=400",
+    "Soup":                         "https://images.unsplash.com/photo-1547592180-85f173990554?w=400",
+
+    // High protein
+    "Egg Bowl":                     "https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=400",
+    "Chicken Breast":               "https://images.unsplash.com/photo-1532550907401-a500c9a57435?w=400",
+    "Paneer Bowl":                  "https://images.unsplash.com/photo-1567337710282-00832b415979?w=400",
+
+    // Keto
+    "Avocado Salad":                "https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=400",
+    "Keto Eggs":                    "https://images.unsplash.com/photo-1525351484163-7529414344d8?w=400",
+    "Butter Coffee":                "https://images.unsplash.com/photo-1509785307050-d4066910ec1e?w=400",
+
+    // Fruit bowl
+    "Apple Banana Bowl":            "https://images.unsplash.com/photo-1574856344991-aaa31b6f4b3f?w=400",
+    "Tropical Mix":                 "https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=400",
+    "Berry Bowl":                   "https://images.unsplash.com/photo-1488477181946-6428a0291777?w=400",
+
+    // Smoothies
+    "Mango Smoothie":               "https://images.unsplash.com/photo-1546173159-315724a31696?w=400",
+    "Strawberry Smoothie":          "https://images.unsplash.com/photo-1502741224143-90386d7f8c82?w=400",
+    "Banana Smoothie":              "https://images.unsplash.com/photo-1570696516188-ade861b84a49?w=400",
+
+    // Fruit salad
+    "Mixed Fruit Salad":            "https://images.unsplash.com/photo-1568158879083-c42860933ed7?w=400",
+    "Citrus Salad":                 "https://images.unsplash.com/photo-1519996529931-28324d5a630e?w=400",
+    "Honey Fruit Salad":            "https://images.unsplash.com/photo-1478145046317-39f10e56b5e9?w=400",
+
+    // Healthy snacks
+    "Nuts Mix":                     "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400",
+    "Protein Bar":                  "https://www.naturevalley.com/_next/image?url=https%3A%2F%2Fmojo.generalmills.com%2Fapi%2Fpublic%2Fcontent%2FrHvqvi1GQ0q-jUmmmh9oaw_04c57eea-66a2-45cd-a3f2-ecd27146a451_04c57eea-66a2-45cd-a3f2-ecd27146a451.png%3Fv%3Dbc429859%26t%3D04c57eea66a245cda3f2ecd27146a451&w=768&q=75",
+    "Fruit Cups":                   "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?w=400",
+
+    // Fried snacks
+    "Fries":                        "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=400",
+    "Samosa":                       "https://images.unsplash.com/photo-1601050690597-df0568f70950?w=400",
+    "Pakora":                       "https://images.unsplash.com/photo-1606491956689-2ea866880c84?w=400",
+
+    // Fast food
+    "Burger":                       "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400",
+    "Pizza Slice":                  "https://images.unsplash.com/photo-1571407970349-bc81e7e96d47?w=400",
+    "Wrap":                         "https://images.unsplash.com/photo-1550547660-d9450f859349?w=400"
+};
+
+const FALLBACK = "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400";
+
+function img(key, map) {
+    return map[key] || FALLBACK;
+}
+
+/* MAIN */
+function loadMain(){
+    app.innerHTML = `
+        <div class="page-title">What are you craving?</div>
+        <div class="grid"></div>
+    `;
+
+    let grid = app.querySelector(".grid");
+
+    for(let key in data){
+        let d = data[key];
+
+        let card = document.createElement("div");
+        card.className = "card";
+
+        card.innerHTML = `
+            <img src="${img(key, mainImages)}">
+            <div class="card-content">
+                <h3>${d.label}</h3>
+            </div>
+        `;
+
+        card.onclick = () => loadSubs(key);
+        grid.appendChild(card);
+    }
+}
+
+/* SUBS */
+function loadSubs(key){
+    currentMain = key;
+    let obj = data[key];
+
+    app.innerHTML = `
+        <button class="back-btn" onclick="loadMain()">← Back</button>
+        <div class="page-title">${obj.label}</div>
+        <div class="grid"></div>
+    `;
+
+    let grid = app.querySelector(".grid");
+    let children = obj.subs || obj.cuisines || {};
+
+    for(let k in children){
+        let s = children[k];
+
+        let card = document.createElement("div");
+        card.className = "card";
+
+        card.innerHTML = `
+            <img src="${img(k, subImages)}">
+            <div class="card-content">
+                <h3>${s.label}</h3>
+            </div>
+        `;
+
+        card.onclick = () => {
+            if(s.items){
+                loadItems(s);
+            } else {
+                loadSubsChild(s, k);
+            }
+        };
+
+        grid.appendChild(card);
+    }
+}
+
+/* SUB CHILD */
+function loadSubsChild(obj, parentKey){
+
+    app.innerHTML = `
+        <button class="back-btn" onclick="loadSubs(currentMain)">← Back</button>
+        <div class="page-title">${obj.label}</div>
+        <div class="grid"></div>
+    `;
+
+    let grid = app.querySelector(".grid");
+    let children = obj.subs || obj.cuisines || {};
+
+    for(let k in children){
+        let s = children[k];
+
+        let card = document.createElement("div");
+        card.className = "card";
+
+        card.innerHTML = `
+            <img src="${img(k, subImages)}">
+            <div class="card-content">
+                <h3>${s.label}</h3>
+            </div>
+        `;
+
+        card.onclick = () => loadItems(s);
+        grid.appendChild(card);
+    }
+}
+
+/* ITEMS */
+function loadItems(obj){
+
+    app.innerHTML = `
+        <button class="back-btn" onclick="loadSubs(currentMain)">← Back</button>
+        <div class="page-title">${obj.label}</div>
+        <div></div>
+    `;
+
+    let box = app.querySelector("div:last-child");
+
+    obj.items.forEach(item => {
+        let div = document.createElement("div");
+        div.className = "item";
+
+        div.innerHTML = `
+            <img src="${img(item, itemImages)}">
+            <div class="item-body">
+                <h4>${item}</h4>
+            </div>
+        `;
+
+        box.appendChild(div);
+    });
+}
+
+loadMain();
+
+</script>
+
+</body>
+</html>
