@@ -206,7 +206,7 @@ MENU = {
 # ================= ROUTES =================
 @app.route("/")
 def home():
-    return send_file("index.html")
+    return render_template("index.html")
 
 @app.route("/get_menu")
 def get_menu():
